@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HealthBot AI</title>
+  <style>
+    /* ========== Global Styles ========== */
+    :root {
+      --bg-dark: #000000;
+      --bg-light: #1a1a1a;
+      --sidebar-bg: #0d0d0d;
+      --border-color: #333333;
+      --text: #ffffff;
+      --text-secondary: #cccccc;
+      --accent: #666666;
+      --hover: #555555;
+      --user-bg: #1a1a1a;
+      --bot-bg: transparent;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+    }
+
+    /* ========== Sidebar ========== */
+    .sidebar {
+      width: 260px;
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 12px;
+      border-right: 1px solid var(--border-color);
+    }
+    
+    .new-chat-btn {
+      background: var(--sidebar-bg);
+      border: 1px solid var(--border-color);
+      padding: 12px 16px;
+      border-radius: 8px;
+      color: var(--text);
+      cursor: pointer;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    
+    .new-chat-btn:hover {
+      background: var(--bg-light);
+    }
+    
+    .sidebar-section {
+      margin-bottom: 24px;
+    }
+    
+    .sidebar-section h3 {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    
+    .sidebar button {
+      background: transparent;
+      border: none;
+      padding: 12px 16px;
+      border-radius: 8px;
+      color: var(--text);
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+      transform: translateX(0);
+    }
+    
+    .sidebar button:hover {
+      background: var(--bg-light);
+      transform: translateX(5px);
+    }
+
+    /* ========== Chat Section ========== */
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: relative;
+    }
+    
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      position: relative;
+    }
+    
+    .welcome-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      padding: 40px;
+      text-align: center;
+    }
+    
+    .welcome-title {
+      font-size: 32px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #ffffff;
+    }
+    
+    .welcome-subtitle {
+      font-size: 18px;
+      color: var(--text-secondary);
+      margin-bottom: 40px;
+    }
+    
+    .example-questions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      max-width: 800px;
+      width: 100%;
+    }
+    
+    .question-card {
+      background: var(--bg-light);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      text-align: left;
+      transform: translateY(0);
+    }
+    
+    .question-card:hover {
+      background: var(--user-bg);
+      transform: translateY(-8px);
+      box-shadow: 0 8px 25px rgba(255, 255, 255, 0.1);
+      border-color: var(--accent);
+    }
+    
+    .question-card h4 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    
+    .question-card p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+    
+    .messages-container {
+      display: none;
+      padding: 0;
+    }
+    
+    .message-group {
+      border-bottom: 1px solid var(--border-color);
+      padding: 24px 0;
+    }
+    
+    .message {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 24px;
+      line-height: 1.7;
+      font-size: 16px;
+    }
+    
+    .message.user {
+      background: var(--user-bg);
+      color: var(--text);
+      margin-bottom: 24px;
+      padding: 16px 24px;
+      border-radius: 12px;
+      position: relative;
+    }
+    
+    .message.user::before {
+      content: "👤";
+      position: absolute;
+      left: -40px;
+      top: 16px;
+      font-size: 20px;
+    }
+    
+    .message.bot {
+      color: var(--text);
+      position: relative;
+      padding-left: 64px;
+    }
+    
+    .message.bot::before {
+      content: "🤖";
+      position: absolute;
+      left: 24px;
+      top: 0;
+      font-size: 20px;
+    }
+
+    /* ========== Chat Input ========== */
+    .chat-input-container {
+      padding: 24px;
+      background: var(--bg-dark);
+      border-top: 1px solid var(--border-color);
+    }
+    
+    .chat-input {
+      max-width: 800px;
+      margin: 0 auto;
+      position: relative;
+    }
+    
+    .chat-input input {
+      width: 100%;
+      padding: 16px 50px 16px 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-light);
+      color: var(--text);
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    
+    .chat-input input:focus {
+      border-color: var(--accent);
+    }
+    
+    .chat-input button {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 8px;
+      background: #666666;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    
+    .chat-input button:hover {
+      background: #555555;
+    }
+    
+    .chat-input button:disabled {
+      background: var(--border-color);
+      cursor: not-allowed;
+    }
+
+    /* ========== Modals ========== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    
+    .modal {
+      background: var(--bg-light);
+      border: 1px solid var(--border-color);
+      padding: 24px;
+      border-radius: 12px;
+      width: 480px;
+      max-width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .modal-header h2 {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 24px;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    
+    .close-btn:hover {
+      background: var(--border-color);
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-dark);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    
+    .form-group input:focus,
+    .form-group textarea:focus {
+      border-color: var(--accent);
+    }
+    
+    .save-btn {
+      background: #666666;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    
+    .save-btn:hover {
+      background: #555555;
+    }
+    
+    .delete-btn {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-left: 8px;
+      transition: background 0.2s;
+    }
+    
+    .delete-btn:hover {
+      background: #dc2626;
+    }
+    
+    .alert-item {
+      background: var(--bg-dark);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-100px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    @keyframes slideInUp {
+      from { opacity: 0; transform: translateY(50px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(100px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    
+    @keyframes fadeInStagger {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    /* Apply animations on load */
+    .sidebar {
+      animation: slideInLeft 0.8s ease-out;
+    }
+    
+    .chat-container {
+      animation: slideInRight 0.8s ease-out;
+    }
+    
+    .welcome-screen {
+      animation: scaleIn 1s ease-out;
+    }
+    
+    .welcome-title {
+      animation: fadeInStagger 1.2s ease-out 0.3s both;
+    }
+    
+    .welcome-subtitle {
+      animation: fadeInStagger 1.2s ease-out 0.5s both;
+    }
+    
+    .example-questions {
+      animation: fadeInStagger 1.2s ease-out 0.7s both;
+    }
+    
+    .question-card {
+      animation: fadeInStagger 0.6s ease-out both;
+    }
+    
+    /* Stagger question cards */
+    .question-card:nth-child(1) { animation-delay: 0.8s; }
+    .question-card:nth-child(2) { animation-delay: 0.9s; }
+    .question-card:nth-child(3) { animation-delay: 1.0s; }
+    .question-card:nth-child(4) { animation-delay: 1.1s; }
+    .question-card:nth-child(5) { animation-delay: 1.2s; }
+    .question-card:nth-child(6) { animation-delay: 1.3s; }
+    
+    .chat-input-container {
+      animation: slideInUp 1s ease-out 0.5s both;
+    }
+    
+    .message-group {
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .new-chat-btn {
+      animation: pulse 2s infinite 2s;
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: var(--sidebar-bg);
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 3px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <button class="new-chat-btn" onclick="newChat()">
+      ➕ New Chat
+    </button>
+    
+    <div class="sidebar-section">
+      <h3>Tools</h3>
+      <button onclick="openModal('profileModal')">👤 Profile</button>
+      <button onclick="openModal('alertsModal')">⚠️ Health Alerts</button>
+    </div>
+    
+    <div class="sidebar-section">
+      <h3>Actions</h3>
+      <button onclick="clearChat()">🗑️ Clear Chat</button>
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat-container">
+    <div class="chat-messages" id="chatMessages">
+      <!-- Welcome Screen -->
+      <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-title">HealthBot AI</div>
+        <div class="welcome-subtitle">Your personal health assistant powered by AI</div>
+        
+        <div class="example-questions">
+          <div class="question-card" onclick="askQuestion('What are the symptoms of common cold?')">
+            <h4>💊 Symptoms</h4>
+            <p>What are the symptoms of common cold?</p>
+          </div>
+          
+          <div class="question-card" onclick="askQuestion('How can I maintain a healthy diet?')">
+            <h4>🥗 Nutrition</h4>
+            <p>How can I maintain a healthy diet?</p>
+          </div>
+          
+          <div class="question-card" onclick="askQuestion('What exercises are good for beginners?')">
+            <h4>🏃‍♀️ Fitness</h4>
+            <p>What exercises are good for beginners?</p>
+          </div>
+          
+          <div class="question-card" onclick="askQuestion('How much water should I drink daily?')">
+            <h4>💧 Hydration</h4>
+            <p>How much water should I drink daily?</p>
+          </div>
+          
+          <div class="question-card" onclick="askQuestion('What are good sleeping habits?')">
+            <h4>😴 Sleep</h4>
+            <p>What are good sleeping habits?</p>
+          </div>
+          
+          <div class="question-card" onclick="askQuestion('How to manage stress effectively?')">
+            <h4>🧘‍♀️ Mental Health</h4>
+            <p>How to manage stress effectively?</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Messages Container -->
+      <div class="messages-container" id="messagesContainer"></div>
+    </div>
+    
+    <div class="chat-input-container">
+      <div class="chat-input">
+        <input type="text" id="messageInput" placeholder="Message HealthBot..." />
+        <button onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Modal -->
+  <div class="modal-overlay" id="profileModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>User Profile</h2>
+        <button class="close-btn" onclick="closeModal('profileModal')">&times;</button>
+      </div>
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="userName" placeholder="Enter your name">
+      </div>
+      <div class="form-group">
+        <label>Age</label>
+        <input type="number" id="userAge" placeholder="Enter your age">
+      </div>
+      <div class="form-group">
+        <label>Sex</label>
+        <input type="text" id="userSex" placeholder="Male/Female/Other">
+      </div>
+      <div class="form-group">
+        <label>Location</label>
+        <input type="text" id="userLocation" placeholder="Enter your location">
+      </div>
+      <div class="form-group">
+        <label>Medical Conditions</label>
+        <textarea id="userConditions" placeholder="List any medical conditions..." rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Emergency Contact</label>
+        <input type="text" id="emergencyContact" placeholder="Emergency contact number">
+      </div>
+      <button class="save-btn" onclick="saveProfile()">Save Profile</button>
+    </div>
+  </div>
+
+  <!-- Alerts Modal -->
+  <div class="modal-overlay" id="alertsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Health Alerts</h2>
+        <button class="close-btn" onclick="closeModal('alertsModal')">&times;</button>
+      </div>
+      <div id="alertsContent">
+        <div class="alert-item">
+          <div>
+            <strong>🦠 Flu Season Alert</strong><br>
+            <span style="color: var(--text-secondary); font-size: 14px;">Increased flu cases reported in your area. Consider getting vaccinated.</span>
+          </div>
+          <button class="delete-btn" onclick="this.parentElement.remove()">Delete</button>
+        </div>
+        <div class="alert-item">
+          <div>
+            <strong>🌡️ Heatwave Warning</strong><br>
+            <span style="color: var(--text-secondary); font-size: 14px;">High temperatures expected. Stay hydrated and avoid prolonged sun exposure.</span>
+          </div>
+          <button class="delete-btn" onclick="this.parentElement.remove()">Delete</button>
+        </div>
+        <div class="alert-item">
+          <div>
+            <strong>💊 Medication Reminder</strong><br>
+            <span style="color: var(--text-secondary); font-size: 14px;">Don't forget to take your daily vitamins!</span>
+          </div>
+          <button class="delete-btn" onclick="this.parentElement.remove()">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Predefined responses for common health questions
+    const predefinedResponses = {
+      "what are the symptoms of common cold": "Common cold symptoms include: runny or stuffy nose, sneezing, cough, mild headache, low-grade fever, sore throat, and general fatigue. Symptoms usually develop 1-3 days after exposure to the virus and can last 7-10 days. Rest, fluids, and over-the-counter medications can help manage symptoms. See a doctor if symptoms worsen or persist beyond 10 days.",
+      
+      "how can i maintain a healthy diet": "A healthy diet includes: eating plenty of fruits and vegetables (aim for 5-9 servings daily), choosing whole grains over refined ones, including lean proteins like fish, poultry, beans, and nuts, limiting saturated fats and choosing healthy fats, reducing sodium and added sugars, staying hydrated with water, and controlling portion sizes. Plan your meals, cook at home when possible, and remember that moderation is key.",
+      
+      "what exercises are good for beginners": "Great beginner exercises include: walking (start with 15-20 minutes daily), bodyweight exercises like squats, push-ups, and lunges, swimming or water aerobics, yoga or stretching, cycling, and light strength training with proper form. Start slowly, aim for 150 minutes of moderate activity per week, and gradually increase intensity. Always warm up before exercising and cool down afterward.",
+      
+      "how much water should i drink daily": "The general recommendation is about 8 glasses (64 ounces) of water per day, but individual needs vary based on activity level, climate, overall health, and body size. A good rule is to drink when thirsty and check your urine color - pale yellow indicates good hydration. Increase intake during exercise, hot weather, or illness. Foods like fruits and vegetables also contribute to hydration.",
+      
+      "what are good sleeping habits": "Good sleep habits include: maintaining a consistent sleep schedule, creating a relaxing bedtime routine, keeping your bedroom cool, dark, and quiet, avoiding screens 1 hour before bed, limiting caffeine and large meals before bedtime, exercising regularly (but not close to bedtime), managing stress through relaxation techniques, and aiming for 7-9 hours of sleep nightly. If you have persistent sleep problems, consult a healthcare provider.",
+      
+      "how to manage stress effectively": "Effective stress management techniques include: regular exercise, deep breathing exercises, meditation or mindfulness, maintaining social connections, getting adequate sleep, eating a balanced diet, setting realistic goals and priorities, practicing time management, engaging in hobbies you enjoy, and seeking professional help when needed. Remember that some stress is normal, but chronic stress can impact your health."
+    };
+
+    let chatStarted = false;
+
+    function askQuestion(question) {
+      document.getElementById("messageInput").value = question;
+      sendMessage();
+    }
+
+    function addMessage(sender, text) {
+      const messagesContainer = document.getElementById("messagesContainer");
+      
+      if (!chatStarted) {
+        document.getElementById("welcomeScreen").style.display = "none";
+        messagesContainer.style.display = "block";
+        chatStarted = true;
+      }
+
+      const messageGroup = document.createElement("div");
+      messageGroup.className = "message-group";
+      
+      const message = document.createElement("div");
+      message.className = `message ${sender}`;
+      message.innerHTML = text.replace(/\n/g, '<br>');
+      
+      messageGroup.appendChild(message);
+      messagesContainer.appendChild(messageGroup);
+      
+      // Scroll to bottom
+      const chatMessages = document.getElementById("chatMessages");
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById("messageInput");
+      const text = input.value.trim();
+      if (!text) return;
+      
+      addMessage("user", text);
+      input.value = "";
+
+      // Check for predefined response
+      const lowerText = text.toLowerCase();
+      const predefinedResponse = predefinedResponses[lowerText];
+      
+      if (predefinedResponse) {
+        // Simulate typing delay
+        setTimeout(() => {
+          addMessage("bot", predefinedResponse);
+        }, 1000);
+        return;
+      }
+
+      // Try API call for other questions
+      try {
+        const res = await fetch("http://localhost:5000/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          addMessage("bot", data.reply || "I'm sorry, I couldn't generate a response for that question.");
+        } else {
+          throw new Error("Server error");
+        }
+      } catch (error) {
+        // Fallback response when API is not available
+        addMessage("bot", "I'm sorry, I'm currently unable to connect to my knowledge base. However, I can help you with common health questions like symptoms, nutrition, fitness, hydration, sleep, and stress management. Try asking about any of these topics!");
+      }
+    }
+
+    function newChat() {
+      document.getElementById("messagesContainer").innerHTML = "";
+      document.getElementById("messagesContainer").style.display = "none";
+      document.getElementById("welcomeScreen").style.display = "flex";
+      chatStarted = false;
+    }
+
+    function clearChat() {
+      newChat();
+    }
+
+    function openModal(id) {
+      document.getElementById(id).style.display = "flex";
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = "none";
+    }
+
+    function saveProfile() {
+      // Here you could save profile data to localStorage or send to server
+      alert("Profile saved successfully!");
+      closeModal('profileModal');
+    }
+
+    // Enter key support
+    document.getElementById("messageInput").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        sendMessage();
+      }
+    });
+
+    // Auto-resize textarea
+    document.addEventListener('input', function (e) {
+      if (e.target.tagName.toLowerCase() === 'textarea') {
+        e.target.style.height = 'auto';
+        e.target.style.height = e.target.scrollHeight + 'px';
+      }
+    });
+  </script>
+</body>
+</html>
